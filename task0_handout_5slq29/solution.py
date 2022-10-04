@@ -1,8 +1,7 @@
-import numpy
 from scipy.stats import laplace, norm, t
-import scipy
 import math
 import numpy as np
+from scipy.special import logsumexp
 
 VARIANCE = 2.0
 
@@ -43,6 +42,30 @@ def log_posterior_probs(x):
     assert x.ndim == 1
 
     # TODO: enter your code here
+    
+    # Compute the numerators
+    n1 = np.sum(np.log(norm.pdf(x, loc=0.0, scale=math.sqrt(VARIANCE)))) + np.log(PRIOR_PROBS[0])
+    n2 = np.sum(np.log(laplace.pdf(x, loc=0.0, scale=laplace_scale))) + np.log(PRIOR_PROBS[1])
+    n3 = np.sum(np.log(t.pdf(x, df=student_t_df))) + np.log(PRIOR_PROBS[2])
+
+    # Compute the vector of normalization constants
+    z = logsumexp([n1, n2, n3])
+
+    # Return the log posteriors
+    log_p = np.array([n1-z, n2-z, n3-z])
+    
+    """
+    p1 = norm.pdf(x, loc=0.0, scale=math.sqrt(VARIANCE))
+    p2 = laplace.pdf(x, loc=0.0, scale=laplace_scale)
+    p3 = t.pdf(x, df=student_t_df)
+    n1 = p1.prod()*PRIOR_PROBS[0]
+    n2 = p2.prod()*PRIOR_PROBS[1]
+    n3 = p3.prod()*PRIOR_PROBS[2]
+    z = n1+n2+n3
+    p = np.array([n1/z, n2/z, n3/z])
+    print(p)
+    log_p = np.log(p)
+    """
 
     assert log_p.shape == (3,)
     return log_p
