@@ -1,6 +1,6 @@
 import os
 import typing
-from sklearn.gaussian_process.kernels import *
+from sklearn.gaussian_process.kernels import DotProduct, RBF, Matern
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 import matplotlib.pyplot as plt
@@ -48,6 +48,8 @@ class Model(object):
         gp_mean = np.zeros(test_features.shape[0], dtype=float)
         gp_std = np.zeros(test_features.shape[0], dtype=float)
 
+        (gp_mean, gp_std)=self.GP_prior.predict(test_features, return_std=True)
+
         # TODO: Use the GP posterior to form your predictions here
         predictions = gp_mean
 
@@ -61,7 +63,23 @@ class Model(object):
         """
 
         # TODO: Fit your model here
-        pass
+        
+        indexes=np.random.randint(0, len(train_GT), int(len(train_GT)/10))
+
+        X=train_features[indexes, :]
+        Y=train_GT[indexes]
+
+        kernels=[DotProduct, RBF, Matern]
+
+        best_likelihood=-np.inf
+
+        for k in kernels: #based on the kernel we choose, we instantiate the regressor and evaluate marginal likelihood
+
+            GP_Regressor=GaussianProcessRegressor(kernel=k, random_state=1).fit(X, Y)
+            marginal_likelihood=GP_Regressor.log_marginal_likelihood 
+
+            if marginal_likelihood>=best_likelihood:                    
+                self.GP_prior=GP_Regressor
 
 
 def cost_function(ground_truth: np.ndarray, predictions: np.ndarray) -> float:
