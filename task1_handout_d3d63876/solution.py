@@ -48,7 +48,7 @@ class Model(object):
         gp_mean = np.zeros(test_features.shape[0], dtype=float)
         gp_std = np.zeros(test_features.shape[0], dtype=float)
 
-        (gp_mean, gp_std)=self.GP_prior.predict(test_features, return_std=True)
+        gp_mean, gp_std=self.GP_prior.predict(test_features, return_std=True)
 
         # TODO: Use the GP posterior to form your predictions here
         predictions = gp_mean
@@ -69,17 +69,20 @@ class Model(object):
         X=train_features[indexes, :]
         Y=train_GT[indexes]
 
-        kernels=[DotProduct, RBF, Matern]
+        kernels=[DotProduct(), RBF(), Matern()]
 
         best_likelihood=-np.inf
 
         for k in kernels: #based on the kernel we choose, we instantiate the regressor and evaluate marginal likelihood
 
             GP_Regressor=GaussianProcessRegressor(kernel=k, random_state=1).fit(X, Y)
-            marginal_likelihood=GP_Regressor.log_marginal_likelihood 
+            marginal_likelihood=GP_Regressor.log_marginal_likelihood_value_
 
             if marginal_likelihood>=best_likelihood:                    
                 self.GP_prior=GP_Regressor
+                best_likelihood=marginal_likelihood
+        
+
 
 
 def cost_function(ground_truth: np.ndarray, predictions: np.ndarray) -> float:
