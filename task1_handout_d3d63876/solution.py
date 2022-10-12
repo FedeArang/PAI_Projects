@@ -86,10 +86,11 @@ class Model(object):
         Y=Y_train[indexes]
 
         kernel=1.0*DotProduct(1.0)+1.0*Matern(1.0, nu=1.5)
+        # We tried fixing nu but 1.5 gave the best results 
 
         # We tried to combine linearly the kernels we saw in class, 
         # knowing that this will still produce a valid kernel
-        #A gaussia kernel gave smaples way too smooth
+        #A gaussian kernel gave smaples way too smooth
 
         GP_Regressor=GaussianProcessRegressor(kernel=kernel, random_state=0).fit(X, Y)
         self.marginal_likelihood=GP_Regressor.log_marginal_likelihood_value_
