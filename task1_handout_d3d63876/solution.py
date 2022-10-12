@@ -32,7 +32,7 @@ class Model(object):
         Initialize your model here.
         We already provide a random number generator for reproducibility.
         """
-        self.rng = np.random.default_rng(seed=0)
+        self.rng = np.random.default_rng(seed=1)
         self.GP_Posterior=None
         self.data_mean=None
         self.data_std=None
@@ -80,7 +80,7 @@ class Model(object):
         Y_train=scaler.fit_transform(train_GT[:, np.newaxis])[:,0]
         
         # Undersampling to avoid computing the inverse of a huge matrix
-        indexes=np.random.randint(0, len(train_GT), int(len(train_GT)/4))
+        indexes=self.rng.integers(0, len(train_GT), int(len(train_GT)/4))
 
         X=train_features[indexes, :]
         Y=Y_train[indexes]
