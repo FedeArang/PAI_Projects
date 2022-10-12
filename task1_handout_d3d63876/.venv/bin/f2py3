@@ -1,5 +1,5 @@
 #!/bin/sh
-'''exec' "/Users/ludovicacattaneo/Desktop/Probabilistic Artificial Intelligence/PAI_Projects/task1_handout_d3d63876/.venv/bin/python3" "$0" "$@"
+'''exec' "/Users/ludovicacattaneo/Desktop/Probabilistic Artificial Intelligence/PAI_Projects/task1_handout_d3d63876/.venv/bin/python" "$0" "$@"
 ' '''
 # -*- coding: utf-8 -*-
 import re
