@@ -32,7 +32,7 @@ class Model(object):
         Initialize your model here.
         We already provide a random number generator for reproducibility.
         """
-        self.rng = np.random.default_rng(seed=1)
+        self.rng = np.random.default_rng(seed=2)
         self.GP_Posterior=None
         self.data_mean=None
         self.data_std=None
