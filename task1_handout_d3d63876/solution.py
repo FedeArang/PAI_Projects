@@ -53,8 +53,10 @@ class Model(object):
         gp_std = np.zeros(test_features.shape[0], dtype=float)
 
         gp_mean, gp_std=self.GP_Posterior.predict(test_features, return_std=True)
+        
         # De-standardize the predictions
         gp_mean = gp_mean*self.data_std + self.data_mean
+        gp_std = gp_std*self.data_std
 
         # TODO: Use the GP posterior to form your predictions here
         # in order to not be excessively penalized by the loss function, we add some bias 
