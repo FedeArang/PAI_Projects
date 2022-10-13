@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from sklearn import preprocessing
 
 
 # Set `EXTENDED_EVALUATION` to `True` in order to visualize your predictions.
@@ -31,7 +32,10 @@ class Model(object):
         Initialize your model here.
         We already provide a random number generator for reproducibility.
         """
-        self.rng = np.random.default_rng(seed=0)
+        self.rng = np.random.default_rng(seed=2)
+        self.GP_Posterior=None
+        self.data_mean=None
+        self.data_std=None
 
         # TODO: Add custom initialization for your model here if necessary
 
@@ -48,10 +52,14 @@ class Model(object):
         gp_mean = np.zeros(test_features.shape[0], dtype=float)
         gp_std = np.zeros(test_features.shape[0], dtype=float)
 
-        gp_mean, gp_std=self.GP_prior.predict(test_features, return_std=True)
+        gp_mean, gp_std=self.GP_Posterior.predict(test_features, return_std=True)
+        # De-standardize the predictions
+        gp_mean = gp_mean*self.data_std + self.data_mean
 
         # TODO: Use the GP posterior to form your predictions here
-        predictions = gp_mean
+        # in order to not be excessively penalized by the loss function, we add some bias 
+        # in our prediction slightly overestimating the pollution
+        predictions = gp_mean+0.05*self.data_std
 
         return predictions, gp_mean, gp_std
 
@@ -63,25 +71,52 @@ class Model(object):
         """
 
         # TODO: Fit your model here
+
+        self.data_mean=np.mean(train_GT)
+        self.data_std=np.std(train_GT)
+
+        # Standardize the data before processing
+        scaler=preprocessing.StandardScaler()
+        Y_train=scaler.fit_transform(train_GT[:, np.newaxis])[:,0]
         
-        indexes=np.random.randint(0, len(train_GT), int(len(train_GT)/10))
+        # Undersampling to avoid computing the inverse of a huge matrix
+        indexes=self.rng.integers(0, len(train_GT), int(len(train_GT)/4))
 
         X=train_features[indexes, :]
-        Y=train_GT[indexes]
+        Y=Y_train[indexes]
 
-        kernels=[DotProduct(), RBF(), Matern()]
+        kernel=1.0*DotProduct(1.0)+1.0*Matern(1.0, nu=1.5)
+        # We tried fixing nu but 1.5 gave the best results 
 
-        best_likelihood=-np.inf
+        # We tried to combine linearly the kernels we saw in class, 
+        # knowing that this will still produce a valid kernel
+        #A gaussian kernel gave smaples way too smooth
 
-        for k in kernels: #based on the kernel we choose, we instantiate the regressor and evaluate marginal likelihood
+        GP_Regressor=GaussianProcessRegressor(kernel=kernel, random_state=0).fit(X, Y)
+        self.marginal_likelihood=GP_Regressor.log_marginal_likelihood_value_
+                                   
+        self.GP_Posterior=GP_Regressor
 
-            GP_Regressor=GaussianProcessRegressor(kernel=k, random_state=1).fit(X, Y)
-            marginal_likelihood=GP_Regressor.log_marginal_likelihood_value_
+def gradient_descent(max_iter, ground_truth, gp_mean):
 
-            if marginal_likelihood>=best_likelihood:                    
-                self.GP_prior=GP_Regressor
-                best_likelihood=marginal_likelihood
-        
+    predictions=gp_mean
+
+    for i in range(max_iter):
+
+        cost = ground_truth - predictions
+        weights = np.ones_like(cost) * COST_W_NORMAL
+
+        # Case i): underprediction
+        mask_1 = predictions < ground_truth
+        weights[mask_1] = COST_W_UNDERPREDICT
+
+        # Case ii): significant overprediction
+        mask_2 = (predictions >= 1.2*ground_truth)
+        weights[mask_2] = COST_W_OVERPREDICT
+
+        predictions=predictions+2*cost*weights
+
+    return predictions
 
 
 
