@@ -1,6 +1,6 @@
 import os
 import typing
-from sklearn.gaussian_process.kernels import DotProduct, RBF, Matern
+from sklearn.gaussian_process.kernels import DotProduct, Matern, WhiteKernel
 import numpy as np
 from sklearn.gaussian_process import GaussianProcessRegressor
 import matplotlib.pyplot as plt
@@ -61,7 +61,7 @@ class Model(object):
         # TODO: Use the GP posterior to form your predictions here
         # in order to not be excessively penalized by the loss function, we add some bias 
         # in our prediction slightly overestimating the pollution
-        predictions = gp_mean+0.05*self.data_std
+        predictions = gp_mean+0.07*self.data_std
 
         return predictions, gp_mean, gp_std
 
@@ -87,7 +87,7 @@ class Model(object):
         X=train_features[indexes, :]
         Y=Y_train[indexes]
 
-        kernel=1.0*DotProduct(1.0)+1.0*Matern(1.0, nu=1.5)
+        kernel=1.0*DotProduct(1.0) + 1.0*Matern(1.0, nu=1.5) + 1.0*WhiteKernel()
         # We tried fixing nu but 1.5 gave the best results 
 
         # We tried to combine linearly the kernels we saw in class, 
@@ -99,33 +99,10 @@ class Model(object):
                                    
         self.GP_Posterior=GP_Regressor
 
-def gradient_descent(max_iter, ground_truth, gp_mean):
-
-    predictions=gp_mean
-
-    for i in range(max_iter):
-
-        cost = ground_truth - predictions
-        weights = np.ones_like(cost) * COST_W_NORMAL
-
-        # Case i): underprediction
-        mask_1 = predictions < ground_truth
-        weights[mask_1] = COST_W_UNDERPREDICT
-
-        # Case ii): significant overprediction
-        mask_2 = (predictions >= 1.2*ground_truth)
-        weights[mask_2] = COST_W_OVERPREDICT
-
-        predictions=predictions+2*cost*weights
-
-    return predictions
-
-
 
 def cost_function(ground_truth: np.ndarray, predictions: np.ndarray) -> float:
     """
     Calculates the cost of a set of predictions.
-
     :param ground_truth: Ground truth pollution levels as a 1d NumPy float array
     :param predictions: Predicted pollution levels as a 1d NumPy float array
     :return: Total cost of all predictions as a single float
